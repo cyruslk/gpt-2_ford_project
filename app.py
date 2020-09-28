@@ -17,10 +17,11 @@ define("batch_size", default=5, help="batch size to generate text with gpt2")
 define("nsamples", default=5, help="num of samples parameters as defined in gpt2 doc")
 define("threshold", default=7, help="length of words before model generates text")
 define("text_length", default=100, help="length of words generated")
+define("learning_rate", default=0.001)
 
 
 class ModelHandler(object):
-	
+
 	def __init__(self):
 		self.cache = ""
 		self.threshold = options.threshold # default
@@ -40,16 +41,16 @@ class ModelHandler(object):
 
 		if not os.path.isfile(self.file_name):
 
-			url = "https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt"
+			url = "https://res.cloudinary.com/dvtjd0zw1/raw/upload/v1581651005/de%20Ford%20TXT/1892_Ford_Draft_of_Action_zl1gum.txt"
 			data = requests.get(url)
-		
+
 			with open(self.file_name, 'w') as f:
 				f.write(data.text)
 
 		self.sess = gpt2.start_tf_sess()
 
 		if not os.path.isdir(os.path.join("checkpoint", "run1")):
-			gpt2.finetune(self.sess, self.file_name, model_name=options.model_name,steps=10)
+			gpt2.finetune(self.sess, self.file_name, model_name=options.model_name,steps=150)
 		else:
 			gpt2.load_gpt2(self.sess)
 
@@ -66,13 +67,19 @@ class ModelHandler(object):
 
 		self.sess = gpt2.start_tf_sess()
 		gpt2.load_gpt2(sess)
-	
-	async def generate_text(self, prefix, text_length=options.text_length):
-		gen_text = gpt2.generate(self.sess, length=text_length,
-		 prefix=prefix, nsamples=options.nsamples, 
-		 batch_size=options.batch_size, return_as_list=True)[0]
 
-		self.results=gen_text;
+	async def generate_text(self, prefix, text_length=options.text_length):
+		gen_text = gpt2.generate(self.sess, 
+		length=text_length,
+		prefix=prefix,
+		temperature=0.5, 
+		return_as_list=True)[0]
+
+		text = gen_text.replace('\n', ' ')
+		sentences = text.split('.')
+		clean_text = '. '.join(sentences[:-1])+"."
+
+		self.results=clean_text;
 
 	async def add_message(self, prefix):
 		self.cache+=prefix
